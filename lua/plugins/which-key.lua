@@ -15,6 +15,7 @@ return {
       { "<leader>gh", group = "hunks" },
       { "<leader>q", group = "quit" },
       { "<leader>s", group = "search" },
+      { "<leader>u", group = "ui" },
     },
   },
 }

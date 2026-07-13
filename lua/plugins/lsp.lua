@@ -25,6 +25,10 @@ return {
         -- В проектах на Bulma/обычном CSS сервер просто не стартует — там классы
         -- даёт nvim-html-css (см. lua/plugins/html-css.lua).
         "tailwindcss",  -- Tailwind CSS
+        -- stimulus_ls — автокомплит/переходы для Stimulus-контроллеров
+        -- (data-controller/data-action/data-target в html/erb/slim). Активация
+        -- строго условная (см. stimulus_root ниже) — как и у tailwindcss.
+        "stimulus_ls",
       },
     },
   },
@@ -53,6 +57,36 @@ return {
       -- каждую новую ruby — добавь строку "ruby-lsp" в ~/.default-gems).
       -- mason-lspconfig сервер вне ensure_installed сам не включит — enable вручную.
       vim.lsp.enable("ruby_lsp")
+
+      -- ts_ls (typescript-language-server): дефолтные root_markers включают
+      -- package.json/.git/tsconfig/jsconfig, поэтому сервер лезет в КАЖДЫЙ
+      -- JS-проект — в т.ч. с jsconfig.json БЕЗ TypeScript (jsconfig — валидный
+      -- маркер для чистого JS, tsserver его тоже подхватывает). Но сам
+      -- typescript-language-server не бандлит компилятор: ему нужен реально
+      -- установленный npm-пакет "typescript" в workspace (node_modules/typescript)
+      -- — без него initialize падает с RPC-ошибкой "Could not find a valid
+      -- TypeScript installation" (именно её мы и ловили). Поэтому единственный
+      -- надёжный гейт — не наличие конфигов, а фактическая установка пакета.
+      local function ts_root(fname)
+        local root = vim.fs.root(fname, { "tsconfig.json", "jsconfig.json", "package.json", ".git" })
+        if root and vim.fn.isdirectory(root .. "/node_modules/typescript") == 1 then
+          return root
+        end
+        return nil
+      end
+
+      vim.lsp.config("ts_ls", {
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          if fname == "" then
+            return
+          end
+          local root = ts_root(fname)
+          if root then
+            on_dir(root)
+          end
+        end,
+      })
 
       -- tailwindcss: СТРОГАЯ активация. Дефолтный root_dir сервера падает на
       -- fallback по .git (для tailwind v4), из-за чего сервер цеплялся к КАЖДОМУ
@@ -121,6 +155,50 @@ return {
             return
           end
           local root = tailwind_root(fname)
+          if root then
+            on_dir(root)
+          end
+        end,
+      })
+
+      -- stimulus_ls: та же логика строгой активации, что у tailwindcss —
+      -- дефолтный root_markers сервера ({'Gemfile', '.git'}) зацепился бы к
+      -- ЛЮБОМУ ruby/git-проекту, даже без Stimulus вовсе. Признак реального
+      -- использования Stimulus: гем stimulus-rails/importmap-rails+stimulus
+      -- в Gemfile(.lock), npm-пакет @hotwired/stimulus в package.json, либо
+      -- типовая rails-конвенция app/javascript(/app/frontend)/controllers.
+      local function stimulus_root(fname)
+        local proj = vim.fs.root(fname, { ".git", "Gemfile", "package.json" })
+        if not proj then
+          return nil
+        end
+        local function manifest_mentions_stimulus(name)
+          local ok, lines = pcall(vim.fn.readfile, proj .. "/" .. name)
+          return ok and table.concat(lines, "\n"):match("stimulus") ~= nil
+        end
+        if manifest_mentions_stimulus("Gemfile")
+          or manifest_mentions_stimulus("Gemfile.lock")
+          or manifest_mentions_stimulus("package.json") then
+          return proj
+        end
+        for _, dir in ipairs({
+          "app/javascript/controllers",
+          "app/frontend/controllers",
+        }) do
+          if vim.fn.isdirectory(proj .. "/" .. dir) == 1 then
+            return proj
+          end
+        end
+        return nil
+      end
+
+      vim.lsp.config("stimulus_ls", {
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          if fname == "" then
+            return
+          end
+          local root = stimulus_root(fname)
           if root then
             on_dir(root)
           end

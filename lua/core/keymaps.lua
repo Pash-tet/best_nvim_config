@@ -54,3 +54,8 @@ map("t", "<C-h>", "<C-\\><C-n><C-w>h", { desc = "Go to left window" })
 map("t", "<C-l>", "<C-\\><C-n><C-w>l", { desc = "Go to right window" })
 map("t", "<C-j>", "<C-\\><C-n><C-w>j", { desc = "Go to window below" })
 map("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Go to window above" })
+
+-- Быстрый выход из insert mode: jk → Esc. jk — две буквы под
+-- разными руками (правый указательный + правый средний), в коде
+-- почти никогда не печатается подряд. Пальцы остаются на home row.
+map("i", "jj", "<Esc>", { desc = "Exit insert mode" })

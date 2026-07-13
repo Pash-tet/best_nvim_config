@@ -35,9 +35,7 @@ return {
       "<leader>as",
       "<cmd>ClaudeCodeTreeAdd<cr>",
       desc = "Add file",
-      -- "neo-tree" убран — заменён на snacks.explorer (см. lua/plugins/
-      -- snacks.lua), его filetype уже был в списке как "snacks_picker_list".
-      ft = { "NvimTree", "oil", "minifiles", "netrw", "snacks_picker_list" },
+      ft = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw" },
     },
     { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept diff" },
     { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },

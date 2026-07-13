@@ -44,6 +44,17 @@ return {
     { "<leader>sk", "<cmd>Telescope keymaps<CR>", desc = "Keymaps" },
     { "<leader>sd", "<cmd>Telescope diagnostics<CR>", desc = "Diagnostics" },
     { "<leader>sr", "<cmd>Telescope resume<CR>", desc = "Resume last picker" },
+
+    -- ui: живой пикер тем — enable_preview применяет colorscheme СРАЗУ при
+    -- наведении на пункт (не только по Enter), <Esc>/<C-c> откатывает на ту,
+    -- что была активна до открытия пикера (штатное поведение самого telescope).
+    {
+      "<leader>uc",
+      function()
+        require("telescope.builtin").colorscheme({ enable_preview = true })
+      end,
+      desc = "Colorscheme (live preview)",
+    },
   },
   config = function()
     require("telescope").setup({})

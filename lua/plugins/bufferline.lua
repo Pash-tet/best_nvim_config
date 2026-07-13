@@ -14,8 +14,8 @@ return {
     { "]B", "<cmd>BufferLineMoveNext<CR>", desc = "Move buffer right" },
     { "<leader>bb", "<cmd>e #<CR>", desc = "Switch to other buffer" },
     -- :bdelete закрывает буфер; на ПОСЛЕДНЕМ буфере это закроет и окно (в
-    -- LazyVim этим занимается Snacks.bufdelete, который сохраняет окно — у нас
-    -- Snacks нет, поэтому простой :bdelete, поведение чуть отличается на краю).
+    -- LazyVim этим занимается Snacks.bufdelete, который сохраняет окно —
+    -- у нас пока простой :bdelete, поведение чуть отличается на краю).
     { "<leader>bd", "<cmd>bdelete<CR>", desc = "Delete buffer" },
     { "<leader>bp", "<cmd>BufferLineTogglePin<CR>", desc = "Toggle pin" },
     { "<leader>bP", "<cmd>BufferLineGroupClose ungrouped<CR>", desc = "Delete non-pinned buffers" },
@@ -28,19 +28,13 @@ return {
       -- diagnostics из vim.diagnostic (тот же поток, что LSP+nvim-lint,
       -- см. core/diagnostics.lua) — счётчик ошибок прямо на вкладке буфера.
       diagnostics = "nvim_lsp",
-      -- БЕЗ этого sidebar snacks.explorer будет ПЕРЕКРЫТ полосой вкладок
-      -- сверху — offsets резервирует место над окном под подпись.
-      -- ВАЖНО: filetype="snacks_layout_box", НЕ "snacks_picker_list"/
-      -- "snacks_picker_input". Проверено живьём через `vim.fn.winlayout()`:
-      -- sidebar пикера — это ОДНО настоящее split-окно-контейнер
-      -- ("snacks_layout_box", см. snacks/layout.lua) в дереве сплитов;
-      -- input/list/preview ВНУТРИ него — floating-окна (не участвуют в
-      -- winlayout вообще), поэтому offset.lua (исходник bufferline,
-      -- работает только с реальными split-окнами) должен матчиться именно
-      -- на контейнер, а не на то, что внутри него плавает.
+      -- БЕЗ этого sidebar neo-tree будет ПЕРЕКРЫТ полосой вкладок сверху —
+      -- offsets резервирует место над окном под подпись. filetype="neo-tree"
+      -- сверено по исходнику neo-tree (ui/renderer.lua: vim.bo[bufnr].filetype
+      -- = "neo-tree").
       offsets = {
         {
-          filetype = "snacks_layout_box",
+          filetype = "neo-tree",
           text = "File Explorer",
           highlight = "Directory",
           text_align = "left",
