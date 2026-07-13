@@ -8,12 +8,23 @@ return {
     opts = {
       -- mason-lspconfig сам скачает эти сервера через mason И сам вызовет
       -- vim.lsp.enable() для каждого — вручную .setup{} по-старому не нужен
+      -- ruby_lsp здесь НЕТ сознательно: у нас asdf с кучей ruby под проекты, а
+      -- mason ставит gem в ОДНУ (глобальную) ruby. Открыл проект на другой
+      -- версии — сервер либо не тот, либо отсутствует. Вместо этого ruby-lsp
+      -- берём из ruby самого проекта (asdf-шим `ruby-lsp`) — конфиг+enable ниже,
+      -- в блоке nvim-lspconfig.
       ensure_installed = {
-        "lua_ls",     -- Lua (наш собственный конфиг)
-        "ruby_lsp",   -- Ruby
-        "pyright",    -- Python
-        "ts_ls",      -- JS/TypeScript
-        "bashls",     -- Bash
+        "lua_ls",       -- Lua (наш собственный конфиг)
+        "pyright",      -- Python
+        "ts_ls",        -- JS/TypeScript
+        "bashls",       -- Bash
+        -- tailwindcss — автокомплит tailwind-классов (в т.ч. в .erb/.slim: eruby
+        -- и slim уже в дефолтных filetypes сервера). Активируется ТОЛЬКО когда в
+        -- корне проекта есть tailwind-признак (tailwind.config.*, postcss.config.*,
+        -- Gemfile.lock/package.json с полем tailwind, v4 — @import "tailwindcss").
+        -- В проектах на Bulma/обычном CSS сервер просто не стартует — там классы
+        -- даёт nvim-html-css (см. lua/plugins/html-css.lua).
+        "tailwindcss",  -- Tailwind CSS
       },
     },
   },
@@ -31,6 +42,89 @@ return {
       -- принимать более широкие данные (например, сниппеты в автодополнении).
       vim.lsp.config("*", {
         capabilities = require("blink.cmp").get_lsp_capabilities(),
+      })
+
+      -- ruby-lsp вне mason (см. комментарий в mason-lspconfig выше). cmd =
+      -- "ruby-lsp" — это asdf-шим: он резолвится в ruby, запиннутую для ТЕКУЩЕГО
+      -- проекта (.tool-versions), так что каждый проект получает свой сервер под
+      -- свою версию. Сам ruby-lsp дальше умно собирает кастомный бандл проекта.
+      -- Требование: gem ruby-lsp должен быть установлен в тех ruby, которыми
+      -- пользуешься (`gem install ruby-lsp`; чтобы ставился автоматически в
+      -- каждую новую ruby — добавь строку "ruby-lsp" в ~/.default-gems).
+      -- mason-lspconfig сервер вне ensure_installed сам не включит — enable вручную.
+      vim.lsp.enable("ruby_lsp")
+
+      -- tailwindcss: СТРОГАЯ активация. Дефолтный root_dir сервера падает на
+      -- fallback по .git (для tailwind v4), из-за чего сервер цеплялся к КАЖДОМУ
+      -- git-репозиторию — в т.ч. к Bulma/обычным проектам, где tailwind нет
+      -- (лишний node-процесс на каждый проект). Требуем реальный tailwind-маркер:
+      --   1) конфиг tailwind/postcss (v3 и большинство сетапов),
+      --   2) манифест с зависимостью tailwind (npm-пакет / гем tailwindcss-rails),
+      --   3) css с @import "tailwindcss" / @tailwind (v4 без конфиг-файла).
+      -- vim.fs.root идёт от файла ВВЕРХ по предкам и берёт первый каталог с
+      -- маркером; если ни одного нет — on_dir не зовём, и сервер не стартует.
+      local function tailwind_root(fname)
+        local root = vim.fs.root(fname, {
+          "tailwind.config.js", "tailwind.config.cjs",
+          "tailwind.config.mjs", "tailwind.config.ts",
+          "postcss.config.js", "postcss.config.cjs",
+          "postcss.config.mjs", "postcss.config.ts",
+        })
+        if root then
+          return root
+        end
+        root = vim.fs.root(fname, function(name, path)
+          if name ~= "package.json" and name ~= "Gemfile.lock" then
+            return false
+          end
+          local ok, lines = pcall(vim.fn.readfile, path .. "/" .. name)
+          return ok and table.concat(lines, "\n"):match("tailwind") ~= nil
+        end)
+        if root then
+          return root
+        end
+        -- 3) v4 без конфига/манифеста: css с @import "tailwindcss"/@tailwind.
+        -- Такой css обычно лежит в ПОДкаталоге (app/assets, src…), поэтому вверх
+        -- по предкам его не найти — сначала берём границу проекта (.git/манифест),
+        -- затем ищем ВНИЗ по типовым style-каталогам (node_modules не трогаем).
+        local proj = vim.fs.root(fname, { ".git", "Gemfile", "package.json" })
+        if not proj then
+          return nil
+        end
+        local style_globs = {
+          "*.css",
+          "app/assets/**/*.css",
+          "app/frontend/**/*.css",
+          "src/**/*.css",
+          "assets/**/*.css",
+          "styles/**/*.css",
+          "stylesheets/**/*.css",
+        }
+        for _, glob in ipairs(style_globs) do
+          for _, css in ipairs(vim.fn.globpath(proj, glob, true, true)) do
+            local ok, lines = pcall(vim.fn.readfile, css)
+            if ok then
+              local content = table.concat(lines, "\n")
+              if content:match('@import%s+["\']tailwindcss') ~= nil or content:match("@tailwind%s") ~= nil then
+                return proj
+              end
+            end
+          end
+        end
+        return nil
+      end
+
+      vim.lsp.config("tailwindcss", {
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          if fname == "" then
+            return
+          end
+          local root = tailwind_root(fname)
+          if root then
+            on_dir(root)
+          end
+        end,
       })
 
       -- LSP-кеймапы в стиле LazyVim. Вешаем ПО СОБЫТИЮ LspAttach (буфер-локально

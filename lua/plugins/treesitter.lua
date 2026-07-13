@@ -10,11 +10,19 @@ return {
       "python", "javascript", "typescript",
       "ruby",
       "html", "embedded_template", -- embedded_template = грамматика ERB (и EJS)
+      "slim", -- шаблоны Slim (парсер theoo/tree-sitter-slim из реестра nvim-treesitter)
+      "css",  -- нужен nvim-html-css: он парсит стили (inline <style> и внешние
+              -- .css) именно treesitter-парсером css; без него класс-комплит не работает
     })
 
     -- filetype "eruby" (.erb) не совпадает с именем парсера "embedded_template" —
     -- без этой регистрации vim.treesitter.start() не поймёт, какой парсер использовать
     vim.treesitter.language.register("embedded_template", "eruby")
+
+    -- Neovim нативно НЕ определяет .slim как filetype (vim.filetype.match → nil),
+    -- поэтому регистрируем сами. Имя парсера "slim" совпадает с filetype "slim",
+    -- так что register() тут не нужен — FileType-хук ниже сам вызовет treesitter.start().
+    vim.filetype.add({ extension = { slim = "slim" } })
 
     -- Новый API (main branch) больше не включает highlight декларативно через setup({highlight=...}).
     -- Вместо этого сам Neovim предоставляет vim.treesitter.start() — вызываем на каждый файл.
