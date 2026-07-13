@@ -14,6 +14,22 @@ return {
     -- vim.o.cmdheight = 0 (задано в core/options.lua, рядом с остальными
     -- UI-опциями).
 
+    routes = {
+      -- Гасим "No information available" от vim.lsp.buf.hover(). Появляется в
+      -- .erb при K на CSS-классе: hover опрашивает ВСЕ прицепленные LSP, и пока
+      -- html-css отдаёт инфу по классу, ruby_lsp на том же слове возвращает
+      -- пусто → Neovim шлёт это INFO-уведомление. Само окно hover (CSS-инфа) от
+      -- этого не страдает — глушим только пустой notice. В .rb такого нет: там
+      -- html-css не подключается, а ruby_lsp сам знает символ.
+      -- ВНИМАНИЕ: подавляется ГЛОБАЛЬНО (и при K по символу без hover в любом
+      -- файле). Это сообщение — почти всегда шум (реальный сигнал = окно hover),
+      -- поэтому убираем везде.
+      {
+        filter = { find = "No information available" },
+        opts = { skip = true },
+      },
+    },
+
     messages = {
       -- Диагностика ex-команд (как твой E486) идёт через messages.view_error,
       -- не через notify — это разные пути в noice. По умолчанию error/warn
