@@ -36,6 +36,29 @@ nvim), потом применяем к реальным файлам конфи
   `grn`, `grr`, `gri`, `K` для hover и т.д.) — вручную их прописывать не нужно.
   Установлены и проверены: lua_ls, ruby_lsp, pyright, ts_ls, bashls.
 
+## Миграция на новую машину (чеклист системных зависимостей)
+
+Конфиг — это только Lua-файлы в этой папке. При переносе на новую систему НЕ
+переезжают **системные бинарники**, от которых зависят плагины, и собранные
+артефакты (парсеры treesitter, mason-тулзы). Симптом: nvim ругается на старте.
+
+- **treesitter** (2026-07-13, Intel-Mac `/usr/local`): на новой машине не было
+  `tree-sitter-cli` → ни один парсер не собирался → ошибки. ВАЖНО различать две
+  brew-формулы: `tree-sitter` = только библиотека, а нужен именно
+  **`brew install tree-sitter-cli`** (у нас 0.26.11, симлинк
+  `/usr/local/bin/tree-sitter`). После установки CLI собрать все парсеры:
+  `nvim --headless -c 'lua require("nvim-treesitter").install({...список из
+  treesitter.lua...}):wait(300000)' -c 'qa'` (или `:TSUpdate` из nvim). Парсеры
+  ложатся в `~/.local/share/nvim/site/parser/*.so` — их наличие = проверка.
+  Проверить, что `tree-sitter` виден логин-шеллу (`zsh -lic 'which tree-sitter'`),
+  иначе nvim из терминала его не найдёт.
+- Прочие системные зависимости, которые тоже надо доставить руками на новой
+  машине (см. соответствующие заметки ниже): `rubyfmt` (brew, форматтер Ruby,
+  НЕ через mason), `im-select` (`brew install daipeihust/tap/im-select`),
+  `ripgrep`/`rg` (для telescope live_grep), node/npm (для prettier/eslint_d).
+  mason-тулзы (LSP-серверы, линтеры) mason доустановит сам при первом запуске
+  nvim с реальным экраном (не headless — см. грабля про `platform.is_headless`).
+
 ## Важные грабли (чтобы не наступать снова)
 
 - `mason-lspconfig` **намеренно** пропускает автоустановку `ensure_installed`
