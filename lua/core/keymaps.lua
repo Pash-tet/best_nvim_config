@@ -13,6 +13,8 @@ local map = vim.keymap.set
 -- сохранить и вернуться в normal (<esc> нужен, если жал из insert). Это
 -- основной сейв LazyVim (у них НЕ <leader>w).
 map({ "i", "x", "n", "s" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
+-- <leader>w — тот же save, но из Normal, без тянуться к Ctrl.
+map("n", "<leader>w", "<cmd>w<cr>", { desc = "Save file" })
 
 -- Выход из ПРОГРАММЫ: <leader>qq -> :qa (закрыть ВСЕ окна и выйти). Именно
 -- qa, а не quit: quit закрывает лишь текущее окно, поэтому при открытом
