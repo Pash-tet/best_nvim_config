@@ -11,6 +11,7 @@ return {
     -- названиями вместо голого списка. spec (which-key v3) принимает записи
     -- { "<prefix>", group = "имя" }.
     spec = {
+      { "<leader>a", group = "Claude" },
       { "<leader>b", group = "buffer" },
       { "<leader>c", group = "code" },
       { "<leader>f", group = "file/find" },
@@ -20,6 +21,20 @@ return {
       { "<leader>s", group = "search" },
       { "<leader>u", group = "ui" },
       { "gs", group = "surround" },
+    },
+
+    -- Дефолтные icons.rules (which-key/icons.lua) расставляют иконки по
+    -- угаданным словам в desc ("buffer", "toggle", "code"...). Для команд
+    -- claudecode.nvim ("Focus Claude", "Accept diff" и т.п.) под эти слова
+    -- почти ничего не попадает, поэтому иконка была бы только у части
+    -- пунктов и то случайно. Явное plugin-правило (по образцу дефолтных
+    -- CopilotChat.nvim/snacks.nvim в самом which-key) даёт ОДНУ одинаковую
+    -- иконку сразу всей группе — и заголовку "<leader>a", и каждому
+    -- подпункту, — независимо от формулировки desc.
+    icons = {
+      rules = {
+        { plugin = "claudecode.nvim", icon = " ", color = "green" },
+      },
     },
   },
 }

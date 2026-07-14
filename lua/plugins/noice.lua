@@ -28,6 +28,20 @@ return {
         filter = { find = "No information available" },
         opts = { skip = true },
       },
+
+      -- Гасим шум от claudecode.nvim: "[server] [ERROR] WebSocket server error:
+      -- Client read error: ECONNRESET". Это НЕ поломка — сервер живёт внутри
+      -- nvim, а CLI `claude` (клиент) резко рвёт TCP-соединение без чистого
+      -- WebSocket-close (close code 1006). Штатно происходит при закрытии панели
+      -- claude, выходе из сессии, переподключении через /ide, перезапуске nvim и
+      -- после сна макбука. Плагин зря репортит грязный дисконнект как ERROR →
+      -- красная плашка. Фильтр по "ECONNRESET" точечный: реальные ошибки
+      -- ClaudeCode (сбой хендшейка, порт занят, authToken) сюда не попадают и
+      -- продолжат показываться.
+      {
+        filter = { find = "ECONNRESET" },
+        opts = { skip = true },
+      },
     },
 
     messages = {

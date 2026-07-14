@@ -62,6 +62,25 @@ return {
       bind_to_cwd = false,
       follow_current_file = { enabled = true },
       use_libuv_file_watcher = true,
+      window = {
+        mappings = {
+          -- Grep по директории под курсором (если это файл — берём его
+          -- родительскую директорию). Живёт только в filesystem-источнике:
+          -- "gr" в git_status уже занято под git_revert_file, там это
+          -- значение сохраняется как есть.
+          ["gr"] = {
+            function(state)
+              local node = state.tree:get_node()
+              local path = node.path
+              if node.type ~= "directory" then
+                path = vim.fn.fnamemodify(path, ":h")
+              end
+              require("telescope.builtin").live_grep({ search_dirs = { path } })
+            end,
+            desc = "Grep in this directory",
+          },
+        },
+      },
     },
     window = {
       mappings = {

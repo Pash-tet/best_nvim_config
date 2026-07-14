@@ -23,7 +23,9 @@ return {
     "ClaudeCodeCloseAllDiffs",
   },
   keys = {
-    { "<leader>a", nil, desc = "AI/Claude Code" },
+    -- Группа "<leader>a" (label + иконка) регистрируется централизованно в
+    -- which-key.lua (spec + icons.rules), как и остальные группы — здесь
+    -- держим только реальные команды.
     { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
     { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
     { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
