@@ -25,13 +25,17 @@ return {
     -- то же (та же логика, что раньше в toggleterm.lua).
     {
       "<c-/>",
-      function() Snacks.terminal() end,
+      function()
+        Snacks.terminal()
+      end,
       mode = { "n", "t" },
       desc = "Toggle terminal",
     },
     {
       "<c-_>",
-      function() Snacks.terminal() end,
+      function()
+        Snacks.terminal()
+      end,
       mode = { "n", "t" },
       desc = "Toggle terminal",
     },

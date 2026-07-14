@@ -11,6 +11,9 @@ return {
       "nvim-telescope/telescope-fzf-native.nvim",
       build = "make",
     },
+    -- telescope-undo — курсор по списку истории undo двигает ТОЛЬКО live-diff
+    -- в превью-окне, файл не трогается, пока явно не нажмёшь Enter (restore).
+    "debugloop/telescope-undo.nvim",
   },
   -- Раскладка по образцу LazyVim: группа "f" = file/find, группа "s" = search.
   keys = {
@@ -44,6 +47,7 @@ return {
     { "<leader>sk", "<cmd>Telescope keymaps<CR>", desc = "Keymaps" },
     { "<leader>sd", "<cmd>Telescope diagnostics<CR>", desc = "Diagnostics" },
     { "<leader>sr", "<cmd>Telescope resume<CR>", desc = "Resume last picker" },
+    { "<leader>su", "<cmd>Telescope undo<CR>", desc = "Undo history (preview)" },
 
     -- ui: живой пикер тем — enable_preview применяет colorscheme СРАЗУ при
     -- наведении на пункт (не только по Enter), <Esc>/<C-c> откатывает на ту,
@@ -61,5 +65,6 @@ return {
     -- extension грузится ПОСЛЕ setup — иначе find_files не узнает, что можно
     -- использовать быстрый fzf-сортировщик вместо дефолтного lua-варианта.
     require("telescope").load_extension("fzf")
+    require("telescope").load_extension("undo")
   end,
 }

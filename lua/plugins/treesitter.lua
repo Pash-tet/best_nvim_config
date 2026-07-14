@@ -1,18 +1,26 @@
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
-  lazy = false,        -- README прямо говорит: этот плагин НЕ поддерживает ленивую загрузку
-  build = ":TSUpdate",  -- выполняется после install/update плагина — подтягивает актуальные парсеры
+  lazy = false, -- README прямо говорит: этот плагин НЕ поддерживает ленивую загрузку
+  build = ":TSUpdate", -- выполняется после install/update плагина — подтягивает актуальные парсеры
   config = function()
     require("nvim-treesitter").install({
-      "lua", "vim", "vimdoc", "query",  -- нужны для конфига самого nvim
-      "bash", "markdown", "markdown_inline",
-      "python", "javascript", "typescript",
+      "lua",
+      "vim",
+      "vimdoc",
+      "query", -- нужны для конфига самого nvim
+      "bash",
+      "markdown",
+      "markdown_inline",
+      "python",
+      "javascript",
+      "typescript",
       "ruby",
-      "html", "embedded_template", -- embedded_template = грамматика ERB (и EJS)
+      "html",
+      "embedded_template", -- embedded_template = грамматика ERB (и EJS)
       "slim", -- шаблоны Slim (парсер theoo/tree-sitter-slim из реестра nvim-treesitter)
-      "css",  -- нужен nvim-html-css: он парсит стили (inline <style> и внешние
-              -- .css) именно treesitter-парсером css; без него класс-комплит не работает
+      "css", -- нужен nvim-html-css: он парсит стили (inline <style> и внешние
+      -- .css) именно treesitter-парсером css; без него класс-комплит не работает
     })
 
     -- filetype "eruby" (.erb) не совпадает с именем парсера "embedded_template" —

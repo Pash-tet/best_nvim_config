@@ -2,7 +2,7 @@
 
 -- Leader key нужно задать ДО того, как что-либо ещё загрузится,
 -- иначе keymaps, использующие <leader>, зарегистрируются со старым лидером.
-vim.g.mapleader = " "      -- пробел как leader
+vim.g.mapleader = " " -- пробел как leader
 vim.g.maplocalleader = " "
 
 require("core.options")

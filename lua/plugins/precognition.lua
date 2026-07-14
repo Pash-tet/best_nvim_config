@@ -1,42 +1,39 @@
+-- precognition.nvim — тренажёр motions: показывает виртуальными подсказками,
+-- КАКАЯ клавиша куда прыгнет с текущей позиции курсора (w/b/e по словам,
+-- ^/$ по краям строки, % к парной скобке, gg/G в gutter'е). Держим включённым
+-- сознательно: сейчас идёт этап "режимы и motions" из .claude/notes/
+-- vim-learning.md, и подсказки работают пассивно — прямо во время обычного
+-- редактирования, без отдельных упражнений.
+--
+-- ЭТО РАСХОДНИК: когда motions уйдут в мышечную память, плагин станет чистым
+-- шумом — тогда либо startVisible = false (звать точечно на <leader>up), либо
+-- удалить файл целиком.
 return {
   "tris203/precognition.nvim",
-  --event = "VeryLazy",
+  -- VeryLazy, а не keys: подсказки должны быть на экране СРАЗУ (в этом весь
+  -- смысл пассивного тренажёра), а не после первого нажатия хоткея. Раньше эта
+  -- строка была ЗАКОММЕНТИРОВАНА — но без единого lazy-триггера (event/cmd/ft/
+  -- keys) lazy.nvim грузит плагин на старте по умолчанию, так что поведение
+  -- было ровно тем же. Разница в том, что теперь намерение записано явно, а не
+  -- получается случайно из отсутствия настроек.
+  event = "VeryLazy",
   opts = {
-    -- startVisible = true,
-    -- debounceMs = 0,
-    -- showBlankVirtLine = true,
-    -- highlightFullVirtLine = false,
-    -- highlightColor = { link = "Comment" },
-    -- targetedMotionHighlightColor = { link = "PrecognitionTargetedMotionDefault" },
-    -- textObjectHighlightColors = {
-    --     { link = "DiffText" },
-    --     { link = "DiffChange" },
-    --     { link = "Visual" },
-    -- },
-    -- targetedMotionHints = {
-    --     enabled = true,
-    --     prio = 1,
-    -- },
-    -- hints = {
-    --      Caret = { text = "^", prio = 2 },
-    --      Dollar = { text = "$", prio = 1 },
-    --      MatchingPair = { text = "%", prio = 5 },
-    --      Zero = { text = "0", prio = 1 },
-    --      w = { text = "w", prio = 10 },
-    --      b = { text = "b", prio = 9 },
-    --      e = { text = "e", prio = 8 },
-    --      W = { text = "W", prio = 7 },
-    --      B = { text = "B", prio = 6 },
-    --      E = { text = "E", prio = 5 },
-    -- },
-    -- gutterHints = {
-    --     G = { text = "G", prio = 10 },
-    --     gg = { text = "gg", prio = 9 },
-    --     PrevParagraph = { text = "{", prio = 8 },
-    --     NextParagraph = { text = "}", prio = 8 },
-    -- },
-    -- disabled_fts = {
-    --     "startify",
-    -- },
+    -- Явно, хотя это и дефолт плагина (сверено по исходнику: setup() вызывает
+    -- M.hide() только при startVisible == false). Пишем явно, потому что это
+    -- САМОЕ спорное свойство плагина — постоянный виртуальный текст на экране.
+    -- Такое решение должно быть видно в конфиге, а не подразумеваться дефолтом.
+    startVisible = true,
+  },
+  keys = {
+    -- Погасить/вернуть подсказки, не трогая конфиг: они мешают, например, когда
+    -- вчитываешься в плотный код. Группа <leader>u = "ui" объявлена в
+    -- lua/plugins/which-key.lua.
+    {
+      "<leader>up",
+      function()
+        require("precognition").toggle()
+      end,
+      desc = "Toggle precognition (motion hints)",
+    },
   },
 }

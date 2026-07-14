@@ -4,7 +4,17 @@ return {
   dependencies = { "nvim-tree/nvim-web-devicons" }, -- иконки типов файлов в секции c
   opts = {
     options = {
-      theme = "tokyonight", -- у lualine есть готовая тема под нашу colorscheme
+      -- "auto" — lualine собирает палитру из АКТИВНОЙ colorscheme, а не из
+      -- жёстко зашитого имени темы. Важно именно у нас: <leader>uc (см.
+      -- lua/plugins/telescope.lua) — живой пикер тем с превью, и с "auto"
+      -- статуслайн перекрашивается ВСЛЕД за превью; с жёстким именем он
+      -- остался бы в палитре одной темы независимо от выбранной схемы.
+      -- Раньше здесь стояло "tokyonight" — осталось с тех пор, когда активной
+      -- была tokyonight. После перехода на catppuccin-nvim статуслайн
+      -- продолжал рисоваться палитрой ЧУЖОЙ темы (у catppuccin своя lualine-
+      -- тема есть — lua/lualine/themes/catppuccin-nvim.lua, — но "auto"
+      -- избавляет от необходимости помнить про эту связку вообще).
+      theme = "auto",
       -- ОДНА общая строка на весь редактор (у нас laststatus=3 в core/options.lua),
       -- а не отдельный statusline на каждый сплит — как в LazyVim (globalstatus).
       globalstatus = true,

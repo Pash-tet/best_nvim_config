@@ -13,17 +13,14 @@ return {
     -- ставится, только если непосредственно перед курсором стоит "do"
     -- или "{" (с необязательными пробелами перед курсором).
     autopairs.add_rule(
-      Rule("|", "|", { "ruby", "eruby" })
-        :with_pair(function(opts)
-          local before_cursor = opts.line:sub(1, opts.col - 1)
-          -- %f[%w] — "frontier": пустая позиция на границе (не-слово -> слово).
-          -- Без неё "do%s*$" сматчилось бы и на хвост "todo"/"redo" и вставило
-          -- бы пару там, где | это оператор. С frontier "do" должно быть
-          -- отдельным словом (перед ним пробел/скобка/начало строки).
-          return before_cursor:match("%f[%w]do%s*$") ~= nil
-            or before_cursor:match("{%s*$") ~= nil
-        end)
-        :with_move(cond.done()) -- повторный "|" просто перескакивает через уже вставленный, не дублирует
+      Rule("|", "|", { "ruby", "eruby" }):with_pair(function(opts)
+        local before_cursor = opts.line:sub(1, opts.col - 1)
+        -- %f[%w] — "frontier": пустая позиция на границе (не-слово -> слово).
+        -- Без неё "do%s*$" сматчилось бы и на хвост "todo"/"redo" и вставило
+        -- бы пару там, где | это оператор. С frontier "do" должно быть
+        -- отдельным словом (перед ним пробел/скобка/начало строки).
+        return before_cursor:match("%f[%w]do%s*$") ~= nil or before_cursor:match("{%s*$") ~= nil
+      end):with_move(cond.done()) -- повторный "|" просто перескакивает через уже вставленный, не дублирует
     )
 
     -- ERB-теги: <% %>. Курсор после срабатывания встаёт МЕЖДУ "<%" и " %>",

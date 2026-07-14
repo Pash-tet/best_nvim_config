@@ -3,7 +3,7 @@ return {
     "mason-org/mason-lspconfig.nvim",
     dependencies = {
       { "mason-org/mason.nvim", opts = {} }, -- сам менеджер: качает бинарники серверов
-      "neovim/nvim-lspconfig",               -- готовые конфиги (cmd, root_markers) для сотен серверов
+      "neovim/nvim-lspconfig", -- готовые конфиги (cmd, root_markers) для сотен серверов
     },
     opts = {
       -- mason-lspconfig сам скачает эти сервера через mason И сам вызовет
@@ -14,21 +14,22 @@ return {
       -- берём из ruby самого проекта (asdf-шим `ruby-lsp`) — конфиг+enable ниже,
       -- в блоке nvim-lspconfig.
       ensure_installed = {
-        "lua_ls",       -- Lua (наш собственный конфиг)
-        "pyright",      -- Python
-        "ts_ls",        -- JS/TypeScript
-        "bashls",       -- Bash
+        "lua_ls", -- Lua (наш собственный конфиг)
+        "pyright", -- Python
+        "ts_ls", -- JS/TypeScript
+        "bashls", -- Bash
         -- tailwindcss — автокомплит tailwind-классов (в т.ч. в .erb/.slim: eruby
         -- и slim уже в дефолтных filetypes сервера). Активируется ТОЛЬКО когда в
         -- корне проекта есть tailwind-признак (tailwind.config.*, postcss.config.*,
         -- Gemfile.lock/package.json с полем tailwind, v4 — @import "tailwindcss").
         -- В проектах на Bulma/обычном CSS сервер просто не стартует — там классы
         -- даёт nvim-html-css (см. lua/plugins/html-css.lua).
-        "tailwindcss",  -- Tailwind CSS
+        "tailwindcss", -- Tailwind CSS
         -- stimulus_ls — автокомплит/переходы для Stimulus-контроллеров
         -- (data-controller/data-action/data-target в html/erb/slim). Активация
         -- строго условная (см. stimulus_root ниже) — как и у tailwindcss.
         "stimulus_ls",
+        "jsonls", -- JSON: валидация + автокомплит по JSON Schema (см. schemastore ниже)
       },
     },
   },
@@ -40,12 +41,28 @@ return {
 
   {
     "neovim/nvim-lspconfig",
+    dependencies = {
+      -- schemastore.nvim — не LSP-сервер, а просто база готовых JSON/YAML-схем
+      -- (package.json, tsconfig.json, .eslintrc и сотни других). jsonls сам
+      -- схем не знает — без этого пакета он умеет только базовый JSON-синтаксис.
+      "b0o/schemastore.nvim",
+    },
     config = function()
       -- '*' — специальный конфиг, применяется КО ВСЕМ серверам сразу.
       -- Без этого LSP-серверы не будут знать, что клиент (blink.cmp) умеет
       -- принимать более широкие данные (например, сниппеты в автодополнении).
       vim.lsp.config("*", {
         capabilities = require("blink.cmp").get_lsp_capabilities(),
+      })
+
+      -- jsonls: схемы из schemastore подключаем явно — сам сервер их не грузит.
+      vim.lsp.config("jsonls", {
+        settings = {
+          json = {
+            schemas = require("schemastore").json.schemas(),
+            validate = { enable = true },
+          },
+        },
       })
 
       -- ruby-lsp вне mason (см. комментарий в mason-lspconfig выше). cmd =
@@ -99,10 +116,14 @@ return {
       -- маркером; если ни одного нет — on_dir не зовём, и сервер не стартует.
       local function tailwind_root(fname)
         local root = vim.fs.root(fname, {
-          "tailwind.config.js", "tailwind.config.cjs",
-          "tailwind.config.mjs", "tailwind.config.ts",
-          "postcss.config.js", "postcss.config.cjs",
-          "postcss.config.mjs", "postcss.config.ts",
+          "tailwind.config.js",
+          "tailwind.config.cjs",
+          "tailwind.config.mjs",
+          "tailwind.config.ts",
+          "postcss.config.js",
+          "postcss.config.cjs",
+          "postcss.config.mjs",
+          "postcss.config.ts",
         })
         if root then
           return root
@@ -139,7 +160,7 @@ return {
             local ok, lines = pcall(vim.fn.readfile, css)
             if ok then
               local content = table.concat(lines, "\n")
-              if content:match('@import%s+["\']tailwindcss') ~= nil or content:match("@tailwind%s") ~= nil then
+              if content:match("@import%s+[\"']tailwindcss") ~= nil or content:match("@tailwind%s") ~= nil then
                 return proj
               end
             end
@@ -176,9 +197,11 @@ return {
           local ok, lines = pcall(vim.fn.readfile, proj .. "/" .. name)
           return ok and table.concat(lines, "\n"):match("stimulus") ~= nil
         end
-        if manifest_mentions_stimulus("Gemfile")
+        if
+          manifest_mentions_stimulus("Gemfile")
           or manifest_mentions_stimulus("Gemfile.lock")
-          or manifest_mentions_stimulus("package.json") then
+          or manifest_mentions_stimulus("package.json")
+        then
           return proj
         end
         for _, dir in ipairs({

@@ -29,7 +29,7 @@ autocmd("TextYankPost", {
 autocmd("BufReadPost", {
   group = augroup("restore_cursor", { clear = true }),
   callback = function()
-    local mark = vim.api.nvim_buf_get_mark(0, '"')  -- '"' — mark последней позиции в буфере
+    local mark = vim.api.nvim_buf_get_mark(0, '"') -- '"' — mark последней позиции в буфере
     local line_count = vim.api.nvim_buf_line_count(0)
     if mark[1] > 0 and mark[1] <= line_count then
       vim.api.nvim_win_set_cursor(0, mark)
@@ -43,12 +43,24 @@ autocmd("BufReadPost", {
 -- (format_on_save) переформатировал бы код прямо посреди редактирования.
 local function autosave(buf)
   -- Ранние return'ы: не пишем то, что писать нельзя/незачем.
-  if not vim.api.nvim_buf_is_valid(buf) then return end
-  if not vim.bo[buf].modified then return end        -- нечего сохранять
-  if vim.bo[buf].buftype ~= "" then return end        -- только обычные файловые буферы (не terminal/explorer/nofile)
-  if not vim.bo[buf].modifiable then return end
-  if vim.bo[buf].readonly then return end
-  if vim.api.nvim_buf_get_name(buf) == "" then return end -- нет имени файла — writer'у некуда писать
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  if not vim.bo[buf].modified then
+    return
+  end -- нечего сохранять
+  if vim.bo[buf].buftype ~= "" then
+    return
+  end -- только обычные файловые буферы (не terminal/explorer/nofile)
+  if not vim.bo[buf].modifiable then
+    return
+  end
+  if vim.bo[buf].readonly then
+    return
+  end
+  if vim.api.nvim_buf_get_name(buf) == "" then
+    return
+  end -- нет имени файла — writer'у некуда писать
 
   -- Пишем КОНКРЕТНЫЙ буфер (не полагаясь на "текущий" — надёжно в контексте
   -- BufLeave/FocusLost). "write" штатно триггерит format_on_save.
@@ -70,4 +82,42 @@ autocmd({ "BufLeave", "FocusLost" }, {
     end
   end,
   desc = "Autosave modified file buffers on focus/buffer leave",
+})
+
+-- 4) Закрыть пустой [No Name] буфер, как только он перестал где-либо
+-- отображаться — незачем ему висеть в списке буферов/bufferline.
+-- BufHidden — событие ИМЕННО про этот момент ("буфер только что стал нигде не
+-- показан, но ещё не выгружен"), поэтому никакого сканирования всех буферов
+-- не нужно, реагируем точечно на тот же буфер (`ev.buf`).
+-- Обычный ":e файл" на пустом безымянном буфере сам переиспользует его на
+-- месте (штатное поведение Vim) — BufHidden в этом случае вообще не
+-- сработает, буфер не "прячется", а превращается в файл. А вот когда файл
+-- открывается через прямую подмену буфера окна (так делают neo-tree/
+-- telescope) или когда закрывается один из двух окон с одним и тем же
+-- [No Name] — вот тогда буфер реально "прячется", и это событие ловит оба случая.
+autocmd("BufHidden", {
+  group = augroup("close_empty_noname", { clear = true }),
+  callback = function(ev)
+    if
+      vim.bo[ev.buf].buftype == ""
+      and vim.api.nvim_buf_get_name(ev.buf) == ""
+      and not vim.bo[ev.buf].modified -- не трогаем непустой набранный, но ещё не сохранённый текст
+    then
+      -- НЕ удалять синхронно прямо тут: в момент BufHidden буфер иногда всё
+      -- ещё "в использовании" (напр. Vim досредине закрытия окна) — попытка
+      -- удалить сразу кидает E937. vim.schedule откладывает до следующего
+      -- тика цикла событий, когда операция уже завершена.
+      vim.schedule(function()
+        if
+          vim.api.nvim_buf_is_valid(ev.buf)
+          and vim.api.nvim_buf_get_name(ev.buf) == ""
+          and not vim.bo[ev.buf].modified
+          and vim.fn.bufwinid(ev.buf) == -1 -- перепроверяем: вдруг снова где-то показан
+        then
+          vim.api.nvim_buf_delete(ev.buf, { force = true })
+        end
+      end)
+    end
+  end,
+  desc = "Wipe an empty [No Name] buffer as soon as it stops being displayed anywhere",
 })
