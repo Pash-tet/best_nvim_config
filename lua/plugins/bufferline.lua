@@ -13,10 +13,18 @@ return {
     { "[B", "<cmd>BufferLineMovePrev<CR>", desc = "Move buffer left" },
     { "]B", "<cmd>BufferLineMoveNext<CR>", desc = "Move buffer right" },
     { "<leader>bb", "<cmd>e #<CR>", desc = "Switch to other buffer" },
-    -- :bdelete закрывает буфер; на ПОСЛЕДНЕМ буфере это закроет и окно (в
-    -- LazyVim этим занимается Snacks.bufdelete, который сохраняет окно —
-    -- у нас пока простой :bdelete, поведение чуть отличается на краю).
-    { "<leader>bd", "<cmd>bdelete<CR>", desc = "Delete buffer" },
+    -- Snacks.bufdelete, а НЕ голый :bdelete: bdelete закрывает ещё и ОКНО
+    -- буфера, если в tab'е есть другие окна. С открытым neo-tree это
+    -- приводило к выходу из nvim целиком: окно файла закрывается, остаётся
+    -- одно окно neo-tree, и его close_if_last_window делает q!.
+    -- Snacks.bufdelete удаляет буфер, сохраняя раскладку окон.
+    {
+      "<leader>bd",
+      function()
+        Snacks.bufdelete()
+      end,
+      desc = "Delete buffer",
+    },
     { "<leader>bp", "<cmd>BufferLineTogglePin<CR>", desc = "Toggle pin" },
     { "<leader>bP", "<cmd>BufferLineGroupClose ungrouped<CR>", desc = "Delete non-pinned buffers" },
     { "<leader>br", "<cmd>BufferLineCloseRight<CR>", desc = "Delete buffers to the right" },
@@ -25,6 +33,17 @@ return {
   },
   opts = {
     options = {
+      -- Крестик на вкладке и right-click по ней: по умолчанию тут
+      -- "bdelete! %d", который закрывает и ОКНО буфера — при открытом
+      -- neo-tree это выходило из nvim целиком (см. комментарий у <leader>bd
+      -- выше: остаётся одно окно дерева, и close_if_last_window делает q!).
+      -- Snacks.bufdelete закрывает буфер, не трогая окна.
+      close_command = function(n)
+        Snacks.bufdelete(n)
+      end,
+      right_mouse_command = function(n)
+        Snacks.bufdelete(n)
+      end,
       -- diagnostics из vim.diagnostic (тот же поток, что LSP+nvim-lint,
       -- см. core/diagnostics.lua) — счётчик ошибок прямо на вкладке буфера.
       diagnostics = "nvim_lsp",

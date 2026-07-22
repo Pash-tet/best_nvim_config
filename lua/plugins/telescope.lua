@@ -12,7 +12,17 @@ return {
       build = "make",
     },
     -- telescope-undo — курсор по списку истории undo двигает ТОЛЬКО live-diff
-    -- в превью-окне, файл не трогается, пока явно не нажмёшь Enter (restore).
+    -- в превью-окне; восстановление состояния — <C-r> (insert) / u (normal).
+    -- Enter — это НЕ restore, а yank_additions (дефолты плагина).
+    -- ВАЖНО: при ОТКРЫТИИ пикера плагин синхронно прогоняет буфер через все
+    -- undo-состояния (строит диффы через `silent undo N`) и возвращает назад.
+    -- Этот шторм didChange-пачек ловит гонку в ruby-lsp: сервер парсит документ
+    -- в момент ПРИХОДА pull-diagnostic-запроса (reader-поток), а обрабатывает
+    -- очередь позже (worker) — если между ними в очереди стоял didChange,
+    -- диагностика считается по устаревшему parse_result и КЕШИРУЕТСЯ для нового
+    -- документа. Симптом: после отката через undo-пикер висят фантомные ошибки
+    -- (или наоборот — реальные не показываются), пока не начнёшь печатать.
+    -- Обход — resync в нашем <leader>su ниже.
     "debugloop/telescope-undo.nvim",
   },
   -- Раскладка по образцу LazyVim: группа "f" = file/find, группа "s" = search.
@@ -47,7 +57,43 @@ return {
     { "<leader>sk", "<cmd>Telescope keymaps<CR>", desc = "Keymaps" },
     { "<leader>sd", "<cmd>Telescope diagnostics<CR>", desc = "Diagnostics" },
     { "<leader>sr", "<cmd>Telescope resume<CR>", desc = "Resume last picker" },
-    { "<leader>su", "<cmd>Telescope undo<CR>", desc = "Undo history (preview)" },
+    -- <leader>su — не голый <cmd>Telescope undo<CR>: оборачиваем, чтобы после
+    -- закрытия пикера пересинхронизировать документ с LSP-серверами, у которых
+    -- pull-диагностика (см. комментарий у telescope-undo в dependencies выше —
+    -- иначе ruby-lsp остаётся с протухшим кешем диагностики до следующей правки).
+    -- detach+attach = didClose+didOpen с полным текстом: сервер пересоздаёт
+    -- документ с нуля, а nvim по didOpen сам перезапрашивает диагностику.
+    {
+      "<leader>su",
+      function()
+        local buf = vim.api.nvim_get_current_buf()
+        vim.cmd("Telescope undo")
+        local prompt = vim.api.nvim_get_current_buf()
+        if vim.bo[prompt].filetype ~= "TelescopePrompt" then
+          return
+        end
+        vim.api.nvim_create_autocmd("BufWipeout", {
+          buffer = prompt,
+          once = true,
+          callback = function()
+            -- отложенно: даём changetracking'у дослать накопленные didChange
+            -- (debounce 150ms), и только потом сбрасываем состояние сервера
+            vim.defer_fn(function()
+              if not vim.api.nvim_buf_is_valid(buf) then
+                return
+              end
+              for _, client in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
+                if client:supports_method("textDocument/diagnostic") then
+                  vim.lsp.buf_detach_client(buf, client.id)
+                  vim.lsp.buf_attach_client(buf, client.id)
+                end
+              end
+            end, 300)
+          end,
+        })
+      end,
+      desc = "Undo history (preview)",
+    },
 
     -- ui: живой пикер тем — enable_preview применяет colorscheme СРАЗУ при
     -- наведении на пункт (не только по Enter), <Esc>/<C-c> откатывает на ту,

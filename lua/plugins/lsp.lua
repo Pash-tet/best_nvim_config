@@ -211,6 +211,24 @@ return {
         if not proj then
           return nil
         end
+        -- НЕ стартовать на проектах с залежами вендорного/легаси JS: сервер
+        -- индексирует ВСЕ *.js проекта (исключая лишь node_modules — сверено
+        -- по glob в stimulus-parser/dist/project.js), и на мегабайтных
+        -- минифицированных бандлах (highcharts, ckeditor, jquery...) V8-куча
+        -- доезжает до ~4GB и node умирает с SIGABRT — открытый баг
+        -- github.com/marcoroth/stimulus-lsp/issues/283, настройки для
+        -- ограничения области индексации у сервера нет. Симптом: тихие
+        -- крэш-репорты node в ~/Library/Logs/DiagnosticReports на каждый
+        -- запуск nvim в таком проекте (так это и нашли — сервер там ни разу
+        -- не доживал до конца индексации, т.е. пользы всё равно не приносил).
+        for _, dir in ipairs({
+          "app/frontend/legacy", -- конвенция crm: свалка дов-webpack'овского JS
+          "vendor/assets/rails-assets", -- bower-style вендоринг целых библиотек
+        }) do
+          if vim.fn.isdirectory(proj .. "/" .. dir) == 1 then
+            return nil
+          end
+        end
         local function manifest_mentions_stimulus(name)
           local ok, lines = pcall(vim.fn.readfile, proj .. "/" .. name)
           return ok and table.concat(lines, "\n"):match("stimulus") ~= nil
