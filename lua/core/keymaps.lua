@@ -31,6 +31,11 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 map("x", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
 map("x", "K", ":m '<-2<CR>gv=gv", { desc = "Move selection up" })
 
+-- То же самое в Normal mode, но для ОДНОЙ строки (без выделения). Взято
+-- <A-j>/<A-k>, а не <C-j>/<C-k> — те заняты навигацией по окнам (см. пункт 7).
+map("n", "<A-j>", ":m .+1<CR>==", { desc = "Move line down" })
+map("n", "<A-k>", ":m .-2<CR>==", { desc = "Move line up" })
+
 -- 4) Снять подсветку последнего поиска (после /слово)
 map("n", "<Esc>", ":nohlsearch<CR>", { desc = "Clear search highlight", silent = true })
 --                                     silent = true — не показывать саму команду внизу экрана

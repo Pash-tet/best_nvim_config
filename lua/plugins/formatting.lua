@@ -26,6 +26,17 @@ return {
       python = { "ruff_format" },
       javascript = { "prettier" },
       typescript = { "prettier" },
+      -- eruby — это filetype, который nvim ставит *.erb/*.html.erb (не "erb").
+      -- ft_parsers/ext_parsers не задаём: conform без них зовёт `prettier
+      -- --stdin-filepath $FILENAME`, и парсер prettier выбирает САМ по имени
+      -- файла через overrides в .prettierrc проекта (нужен erb-плагин типа
+      -- @4az/prettier-plugin-html-erb + { files: "*.erb", parser:
+      -- "erb-template" } — см. na_taganrog/.prettierrc). В проекте БЕЗ такого
+      -- плагина/оверрайда prettier упадёт с ошибкой на *.erb — conform НЕ
+      -- откатывается тихо на другой форматтер, format_on_save покажет notify
+      -- с ошибкой prettier. Если работаешь с erb в проекте без этого плагина —
+      -- либо поставь его туда, либо на время убери "eruby" отсюда.
+      eruby = { "prettier" },
       sh = { "shfmt" },
       -- json — без отдельного CLI-форматтера: пустой список форматтеров +
       -- lsp_format = "fallback" переключает conform на уже запущенный jsonls

@@ -8,11 +8,14 @@ return {
     opts = {
       -- mason-lspconfig сам скачает эти сервера через mason И сам вызовет
       -- vim.lsp.enable() для каждого — вручную .setup{} по-старому не нужен
-      -- ruby_lsp здесь НЕТ сознательно: у нас asdf с кучей ruby под проекты, а
+      -- ruby_lsp здесь НЕТ сознательно: у нас mise с кучей ruby под проекты, а
       -- mason ставит gem в ОДНУ (глобальную) ruby. Открыл проект на другой
       -- версии — сервер либо не тот, либо отсутствует. Вместо этого ruby-lsp
-      -- берём из ruby самого проекта (asdf-шим `ruby-lsp`) — конфиг+enable ниже,
-      -- в блоке nvim-lspconfig.
+      -- берём из ruby самого проекта (mise-шим `ruby-lsp`) — конфиг+enable ниже,
+      -- в блоке nvim-lspconfig. ВАЖНО: mason.PATH="prepend" кладёт mason/bin
+      -- ПЕРЕД mise в PATH, так что если пакет ruby-lsp (или rubocop) когда-то
+      -- случайно доставили через :Mason — он молча перебьёт мисовый шим и всю
+      -- эту логику. Держи их удалёнными из mason (`:Mason` → x).
       ensure_installed = {
         "lua_ls", -- Lua (наш собственный конфиг)
         "pyright", -- Python
@@ -66,13 +69,28 @@ return {
       })
 
       -- ruby-lsp вне mason (см. комментарий в mason-lspconfig выше). cmd =
-      -- "ruby-lsp" — это asdf-шим: он резолвится в ruby, запиннутую для ТЕКУЩЕГО
-      -- проекта (.tool-versions), так что каждый проект получает свой сервер под
-      -- свою версию. Сам ruby-lsp дальше умно собирает кастомный бандл проекта.
-      -- Требование: gem ruby-lsp должен быть установлен в тех ruby, которыми
-      -- пользуешься (`gem install ruby-lsp`; чтобы ставился автоматически в
-      -- каждую новую ruby — добавь строку "ruby-lsp" в ~/.default-gems).
+      -- "ruby-lsp" — это mise-шим: он резолвится в ruby, запиннутую для ТЕКУЩЕГО
+      -- проекта (.tool-versions/mise.toml), так что каждый проект получает свой
+      -- сервер под свою версию. Сам ruby-lsp дальше умно собирает кастомный
+      -- бандл проекта. Требование: gem ruby-lsp должен быть установлен в тех
+      -- ruby, которыми пользуешься (`gem install ruby-lsp`; чтобы ставился
+      -- автоматически в каждую новую ruby — добавь строку "ruby-lsp" в
+      -- ~/.default-gems).
       -- mason-lspconfig сервер вне ensure_installed сам не включит — enable вручную.
+      --
+      -- positionEncodings: ruby-lsp (через prism) при utf-8 считает длины
+      -- semantic-token'ов в СИМВОЛАХ вместо БАЙТОВ (баг в Prism::CodeUnitsCache
+      -- ::LengthCounter — использует String#length, а LSP-протокол при utf-8
+      -- требует байты). После любого multibyte-символа в строке (кириллица,
+      -- "·", эмодзи) все токены дальше по строке съезжают на 1 и обрезают
+      -- подсветку последнего символа слова. Отбираем "utf-8" из предлагаемых
+      -- клиентом encoding'ов ТОЛЬКО для этого сервера — тогда он выбирает
+      -- utf-16, где используется корректный UTF16Counter, а Neovim сам
+      -- пересчитывает utf-16 code units обратно в байты буфера.
+      local ruby_capabilities = vim.tbl_deep_extend("force", require("blink.cmp").get_lsp_capabilities(), {})
+      ruby_capabilities.general = ruby_capabilities.general or {}
+      ruby_capabilities.general.positionEncodings = { "utf-16" }
+      vim.lsp.config("ruby_lsp", { capabilities = ruby_capabilities })
       vim.lsp.enable("ruby_lsp")
 
       -- ts_ls (typescript-language-server): дефолтные root_markers включают
