@@ -112,5 +112,8 @@ return {
     -- использовать быстрый fzf-сортировщик вместо дефолтного lua-варианта.
     require("telescope").load_extension("fzf")
     require("telescope").load_extension("undo")
+    -- projects — пикер project.nvim (см. plugins/project.lua): require здесь
+    -- заодно догрузит сам плагин через lazy.nvim, если он ещё не загружен.
+    require("telescope").load_extension("projects")
   end,
 }

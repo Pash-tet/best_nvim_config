@@ -60,6 +60,10 @@ return {
     local file_icon = theta.buttons.val[3].val:match("^(.-)New file$") or ""
     table.insert(theta.buttons.val, 4, dashboard.button("r", file_icon .. "Recent files", "<cmd>AlphaToggleMru<CR>"))
 
+    -- Кнопка "p" — пикер проектов (project.nvim, см. plugins/project.lua):
+    -- выбор проекта делает cd + восстанавливает его сессию.
+    table.insert(theta.buttons.val, 5, dashboard.button("p", "  Projects", "<cmd>Projects<CR>"))
+
     -- Restore Session — перед Quit (последней кнопкой в списке).
     table.insert(
       theta.buttons.val,
