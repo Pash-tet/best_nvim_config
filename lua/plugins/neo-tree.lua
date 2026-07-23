@@ -59,6 +59,18 @@ return {
     open_files_do_not_replace_types = { "terminal", "qf" },
     close_if_last_window = true, -- дерево закрывается, а не растягивается на весь экран
     filesystem = {
+      filtered_items = {
+        visible = true,
+        show_hidden_count = true,
+        hide_dotfiles = false,
+        hide_gitignored = false,
+        hide_by_name = {
+          ".git",
+          ".DS_Store",
+          "thumbs.db",
+        },
+        never_show = {},
+      },
       bind_to_cwd = false,
       follow_current_file = { enabled = true },
       use_libuv_file_watcher = true,
