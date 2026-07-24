@@ -57,6 +57,14 @@ return {
   opts = {
     sources = { "filesystem", "buffers", "git_status" },
     open_files_do_not_replace_types = { "terminal", "qf" },
+    -- Buffer Explorer (<leader>be) по умолчанию показывает только ЗАГРУЖЕННЫЕ
+    -- буферы (is_buf_loaded в sources/buffers/lib/items.lua). При restore
+    -- сессии Neovim грузит лишь видимый буфер, остальные остаются listed, но
+    -- unloaded — и в дерево не попадают, пока по ним не попереключаешься.
+    -- show_unloaded=true показывает и такие восстановленные буферы сразу.
+    buffers = {
+      show_unloaded = true,
+    },
     close_if_last_window = true, -- дерево закрывается, а не растягивается на весь экран
     filesystem = {
       filtered_items = {
